@@ -7,161 +7,29 @@
 <script type="text/javascript" src="webgl-utils.js"></script>
 <script type="text/javascript" src="glMatrix-0.9.5.min.js"></script>
 
-<script id="shader-fs" type="x-shader/x-fragment">    precision mediump float;
-
-    void main(void) {
-        gl_FragColor = vec4(1.0, 1.0, 1.0, 1.0);
-    }
-</script>
-
-<script id="shader-vs" type="x-shader/x-vertex">
-    attribute vec3 aVertexPosition;
-
-    uniform mat4 uMVMatrix;
-    uniform mat4 uPMatrix;
-
-    void main(void) {
-        gl_Position = uPMatrix * uMVMatrix * vec4(aVertexPosition, 1.0);
-    }
-</script>
-
-
 <script type="text/javascript">
-
+"use strict";
     var gl;
+	var ANIM_SPEED = 15;
+	var CELL_SIZE = 22;
+	var GRID_WIDTH = 30;
+	var COLOR= "#4380D3";
+	var BG_COLOR= "#000000";
+	
     function initGL(canvas) {
         try {
-            gl = canvas.getContext("experimental-webgl");
+            gl = canvas.getContext("2d");
             gl.viewportWidth = canvas.width;
             gl.viewportHeight = canvas.height;
+			gl.lineWidth="2";
+			gl.strokeStyle = COLOR;
+			gl.moveTo(0,0);		
         } catch (e) {
         }
         if (!gl) {
             alert("Could not initialise WebGL, sorry :-(");
         }
     }
-
-
-    function getShader(gl, id) {
-        var shaderScript = document.getElementById(id);
-        if (!shaderScript) {
-            return null;
-        }
-
-        var str = "";
-        var k = shaderScript.firstChild;
-        while (k) {
-            if (k.nodeType == 3) {
-                str += k.textContent;
-            }
-            k = k.nextSibling;
-        }
-
-        var shader;
-        if (shaderScript.type == "x-shader/x-fragment") {
-            shader = gl.createShader(gl.FRAGMENT_SHADER);
-        } else if (shaderScript.type == "x-shader/x-vertex") {
-            shader = gl.createShader(gl.VERTEX_SHADER);
-        } else {
-            return null;
-        }
-
-        gl.shaderSource(shader, str);
-        gl.compileShader(shader);
-
-        if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-            alert(gl.getShaderInfoLog(shader));
-            return null;
-        }
-
-        return shader;
-    }
-
-
-    var shaderProgram;
-
-    function initShaders() {
-        var fragmentShader = getShader(gl, "shader-fs");
-        var vertexShader = getShader(gl, "shader-vs");
-
-        shaderProgram = gl.createProgram();
-        gl.attachShader(shaderProgram, vertexShader);
-        gl.attachShader(shaderProgram, fragmentShader);
-        gl.linkProgram(shaderProgram);
-
-        if (!gl.getProgramParameter(shaderProgram, gl.LINK_STATUS)) {
-            alert("Could not initialise shaders");
-        }
-
-        gl.useProgram(shaderProgram);
-
-        shaderProgram.vertexPositionAttribute = gl.getAttribLocation(shaderProgram, "aVertexPosition");
-        gl.enableVertexAttribArray(shaderProgram.vertexPositionAttribute);
-
-        shaderProgram.pMatrixUniform = gl.getUniformLocation(shaderProgram, "uPMatrix");
-        shaderProgram.mvMatrixUniform = gl.getUniformLocation(shaderProgram, "uMVMatrix");
-    }
-
-
-    var mvMatrix = mat4.create();
-    var pMatrix = mat4.create();
-
-    function setMatrixUniforms() {
-        gl.uniformMatrix4fv(shaderProgram.pMatrixUniform, false, pMatrix);
-        gl.uniformMatrix4fv(shaderProgram.mvMatrixUniform, false, mvMatrix);
-    }
-
-
-
-		var squareVertexPositionBuffer;
-
-    function initBuffers() {
-
-        squareVertexPositionBuffer = gl.createBuffer();
-        gl.bindBuffer(gl.ARRAY_BUFFER, squareVertexPositionBuffer);
-        vertices = [
-             1.0,  1.0,  0.0,
-            -1.0,  1.0,  0.0,
-             1.0, -0.1,  0.0,
-            -1.0, -0.1,  0.0
-        ];
-        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
-        squareVertexPositionBuffer.itemSize = 3;
-        squareVertexPositionBuffer.numItems = 4;
-    }
-	
-	var time, startTime;
-	var CELL_SIZE = 10;
-	var GRID_WIDTH = 30;
-			
-	// draw Scene
-    function drawScene() {
-		
-		time = Date.now();
-		
-		if (startTime === undefined)
-			startTime = time;
- 
-		//var animTime = ((time - startTime)/50);
-		//var animTime = time - startTime;
-		var animTime = 100000000000000;
-	
-        gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);
-        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-		mat4.perspective(145, gl.viewportWidth / gl.viewportHeight, 0.1, 100, pMatrix);
-        mat4.identity(mvMatrix);
-        mat4.translate(mvMatrix, [-150, 150, -50]);
-        gl.bindBuffer(gl.ARRAY_BUFFER, squareVertexPositionBuffer);
-        gl.vertexAttribPointer(shaderProgram.vertexPositionAttribute, squareVertexPositionBuffer.itemSize, gl.FLOAT, false, 0, 0);
-		
-		var grid = createGrid();
-				
-		// generate maze
-		grid = generateMaze(grid);
-		
-		// draw maze
-		drawGrid(grid, animTime);
-	}
 	
 	// create a grid in memory
 	function createGrid() {
@@ -182,20 +50,22 @@
 		
 	// Generate maze using the recursive backtracking algorithm
 	function generateMaze(grid) {
-	
+		
 		var visitedCells = [];
+		
+		var locHistory = []; // used to animate the generation of the grid
 		
 		// pick a random cell
 		var x = Math.floor((Math.random()*GRID_WIDTH));
 		var y = Math.floor((Math.random()*GRID_WIDTH));
-		
-		console.log("x: ", x, "y: ", y);
-		
+				
 		grid[y][x].visited = true;
 		visitedCells.push(grid[y][x]);
-
+		
 		while (visitedCells.length < GRID_WIDTH*GRID_WIDTH) {
-
+					
+			locHistory.push({x: x, y: y});
+					
 			// find unvisited neighbouring cells
 			
 			var unvisitedNeighbours = [];
@@ -257,13 +127,12 @@
 				x = cell.x;
 				y = cell.y;
 			}
-			
 			else {
 				break;
 			}
 		}
 		
-		return grid;
+		return {grid: grid, locationHistory: locHistory};
 	}
 	
 	// Destroy wall (NSWE)
@@ -327,86 +196,94 @@
 	}
 	
 	// Draw Grid
-	function drawGrid(grid, animTime) {
-		
+	function drawGrid(grid) {
 		for (var j = 0; j < GRID_WIDTH; j++) {
-			
 			for (var i = 0; i < GRID_WIDTH; i++) {
-				drawWalls(grid[j][i].walls, animTime);
-				mat4.translate(mvMatrix, [CELL_SIZE, 0, 0]);
+				drawWalls(grid[j][i].walls, i*CELL_SIZE, j*CELL_SIZE);
 			}
-			
-			mat4.translate(mvMatrix, [-CELL_SIZE*GRID_WIDTH, -CELL_SIZE, 0]);
+		}
+	}
+	
+	// Draw grid gradually
+	function drawAnimateGrid(grid, animTime, locHistory) {
+		for (var i = 0; i < locHistory.length; i++) {
+			if (ANIM_SPEED*i < animTime) {
+				drawWalls(grid[locHistory[i].y][locHistory[i].x].walls, locHistory[i].x*CELL_SIZE, locHistory[i].y*CELL_SIZE);
+				//gl.beginPath();
+				//gl.arc(locHistory[i].x*CELL_SIZE+5, locHistory[i].y*CELL_SIZE+5, 5, 0, 2 * Math.PI, true);
+				//gl.fill();
+			}
 		}
 	}
 
 	// Draw a cell's walls
 	// walls param is 4 flags (NSWE). if walls = 1111 then draw all of them.
-	function drawWalls(walls, animTime) {
+	function drawWalls(walls, x, y) {
 		
 		var array;
 		
 		// North
-		for (var i = 0; i < CELL_SIZE; i++) {
-			if ((i < animTime) && (walls & 8)) {
-				setMatrixUniforms();
-				gl.drawArrays(gl.TRIANGLE_STRIP, 0, squareVertexPositionBuffer.numItems);		
-			}
-			mat4.translate(mvMatrix, [1, 0, 0]);
+		if (walls & 8) {
+			gl.beginPath();
+			gl.moveTo(x, y);
+			gl.lineTo(x+CELL_SIZE, y);
+			gl.stroke();
 		}
-		mat4.translate(mvMatrix, [-CELL_SIZE, 0, 0]);
 	
 		// South
-		mat4.translate(mvMatrix, [0, -CELL_SIZE, 0]);
-		for (var i = 0; i < CELL_SIZE; i++) {
-			if ((i < animTime) && (walls & 4)) {
-				setMatrixUniforms();
-				gl.drawArrays(gl.TRIANGLE_STRIP, 0, squareVertexPositionBuffer.numItems);		
-			}
-			mat4.translate(mvMatrix, [1, 0, 0]);
+		if (walls & 4) {
+			gl.beginPath();
+			gl.moveTo(x, y+CELL_SIZE);
+			gl.lineTo(x+CELL_SIZE, y+CELL_SIZE);
+			gl.stroke();
 		}
-		mat4.translate(mvMatrix, [-CELL_SIZE, CELL_SIZE, 0]);
 
 		// West
-		for (var i = 0; i < CELL_SIZE; i++) {
-			if ((i < animTime) && (walls & 2)) {
-				setMatrixUniforms();
-				gl.drawArrays(gl.TRIANGLE_STRIP, 0, squareVertexPositionBuffer.numItems);		
-			}
-			mat4.translate(mvMatrix, [0, -1, 0]);
+		if (walls & 2) {
+			gl.beginPath();
+			gl.moveTo(x, y);
+			gl.lineTo(x, y+CELL_SIZE);
+			gl.stroke();
 		}
-		mat4.translate(mvMatrix, [0, CELL_SIZE, 0]);
 	
 		// East
-		mat4.translate(mvMatrix, [CELL_SIZE, 0, 0]);
-		for (var i = 0; i < CELL_SIZE; i++) {
-			if ((i < animTime) && (walls & 1)) {
-				setMatrixUniforms();
-				gl.drawArrays(gl.TRIANGLE_STRIP, 0, squareVertexPositionBuffer.numItems);		
-			}
-			mat4.translate(mvMatrix, [0, -1, 0]);
+		if (walls & 1) {
+			gl.beginPath();
+			gl.moveTo(x+CELL_SIZE, y);
+			gl.lineTo(x+CELL_SIZE, y+CELL_SIZE);
+			gl.stroke();
 		}
-		mat4.translate(mvMatrix, [-CELL_SIZE, CELL_SIZE, 0]);
 	}
+	
+	var time, startTime, maze, locationHistory;
 
 	// Animate
 	function animate() {
+
 		requestAnimFrame( animate );
-		drawScene();
+				
+		time = Date.now();
+		
+		if (startTime === undefined)
+			startTime = time;
+ 
+		var animTime = (time - startTime);
+		
+		drawAnimateGrid(maze, animTime, locationHistory);
 	}
 	
 	// webGLStart
     function webGLStart() {
         var canvas = document.getElementById("amaze-canvas");
         initGL(canvas);
-        initShaders();
-        initBuffers();
-
-        gl.clearColor(0.0, 0.0, 0.0, 1.0);
-        gl.enable(gl.DEPTH_TEST);
 		
-		//animate();
-		drawScene();
+		var grid = createGrid();
+       	//drawGrid(grid);
+				
+		var result = generateMaze(grid);
+		maze = result.grid;
+		locationHistory = result.locationHistory;
+		animate();
     }
 
 </script>
@@ -415,11 +292,15 @@
 </head>
 
 
-<body onload="webGLStart();">
-    <canvas id="amaze-canvas" style="border: none;" width="500" height="500"></canvas>
-	<br/>
-	Randomly generated "perfect" maze using the recursive backtracking algorithm and WebGL for rendering.<br />
+<body onload="webGLStart();" style="background: black">
+	<div style="color: white">
+	Randomly generated "perfect" maze using the recursive backtracking algorithm.<br />
 	Refresh to generate another.
+	</div>
+	<br /><br />
+	<div style="text-align: center">
+    <canvas id="amaze-canvas" style="border: none;" width="680" height="680"></canvas>
+	</div>
 </body>
 
 </html>
