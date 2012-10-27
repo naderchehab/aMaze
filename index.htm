@@ -10,7 +10,7 @@
 <script type="text/javascript">
 "use strict";
     var gl;
-	var ANIM_SPEED = 15;
+	var ANIM_SPEED = 2;
 	var CELL_SIZE = 22;
 	var GRID_WIDTH = 30;
 	var COLOR= "#4380D3";
@@ -195,6 +195,47 @@
 		return cell;
 	}
 	
+	function solveMaze(grid, startx, starty, endx, endy) {
+				
+		if (grid[starty][startx].marked == true)
+			return false;
+			
+		grid[starty][startx].marked = true;
+		
+		if (startx == endx && starty == endy)
+			return true;
+
+		// North
+		if (starty-1 >= 0 && !(grid[starty][startx].walls & 8)) {
+			if (solveMaze(grid, startx, starty-1, endx, endy))
+				return true;
+		}
+		
+		// South
+		if (starty+1 <= GRID_WIDTH-1 && !(grid[starty][startx].walls & 4)) {
+			if (solveMaze(grid, startx, starty+1, endx, endy))
+				return true;
+		}
+				
+		// West
+		if (startx-1 >= 0 && !(grid[starty][startx].walls & 2)) {
+			if (solveMaze(grid, startx-1, starty, endx, endy))
+				return true;
+		}
+				
+		// East
+		if (startx+1 <= GRID_WIDTH-1 && !(grid[starty][startx].walls & 1)) {
+			if (solveMaze(grid, startx+1, starty, endx, endy))
+				return true;
+		}
+				
+		grid[starty][startx].marked = false;
+		
+		return false;
+	}
+	
+	
+	
 	// Draw Grid
 	function drawGrid(grid) {
 		for (var j = 0; j < GRID_WIDTH; j++) {
@@ -209,9 +250,12 @@
 		for (var i = 0; i < locHistory.length; i++) {
 			if (ANIM_SPEED*i < animTime) {
 				drawWalls(grid[locHistory[i].y][locHistory[i].x].walls, locHistory[i].x*CELL_SIZE, locHistory[i].y*CELL_SIZE);
-				//gl.beginPath();
-				//gl.arc(locHistory[i].x*CELL_SIZE+5, locHistory[i].y*CELL_SIZE+5, 5, 0, 2 * Math.PI, true);
-				//gl.fill();
+				
+				if (grid[locHistory[i].y][locHistory[i].x].marked == true) {
+					gl.fillStyle = "yellow";
+					gl.rect(locHistory[i].x*CELL_SIZE+5, locHistory[i].y*CELL_SIZE+5, 5, 5);
+					gl.fill();
+				}
 			}
 		}
 	}
@@ -219,9 +263,7 @@
 	// Draw a cell's walls
 	// walls param is 4 flags (NSWE). if walls = 1111 then draw all of them.
 	function drawWalls(walls, x, y) {
-		
-		var array;
-		
+				
 		// North
 		if (walls & 8) {
 			gl.beginPath();
@@ -283,6 +325,9 @@
 		var result = generateMaze(grid);
 		maze = result.grid;
 		locationHistory = result.locationHistory;
+		
+		solveMaze(result.grid, 0, 0, GRID_WIDTH-1, GRID_WIDTH-1);
+
 		animate();
     }
 
@@ -294,7 +339,7 @@
 
 <body onload="webGLStart();" style="background: black">
 	<div style="color: white">
-	Randomly generated "perfect" maze using the recursive backtracking algorithm.<br />
+	Maze generated using a backtracking algorithm. A similar backtracking algorithm is also used to solve it.<br />
 	Refresh to generate another.
 	</div>
 	<br /><br />
