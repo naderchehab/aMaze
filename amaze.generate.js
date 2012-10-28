@@ -86,7 +86,7 @@ amaze.generate = function() {
 			}
 		}
 		
-		return {grid: grid, locationHistory: locHistory};
+		return {maze: grid, locationHistory: locHistory};
 	}
 	
 	return {

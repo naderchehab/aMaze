@@ -3,9 +3,10 @@
 amaze.display = function() {
 
 	var gl, time, startTime;
+	var data = {};
 
-	// init GL
-    var initGl = function() {
+	// init Web GL and grid data
+    var init = function(d) {
         var canvas = document.getElementById("amaze-canvas");
 		
         try {
@@ -15,6 +16,10 @@ amaze.display = function() {
 			gl.lineWidth = "2";
 			gl.strokeStyle = amaze.constants.Color;
 			gl.moveTo(0,0);		
+			
+			data.maze = d.maze;
+			data.locationHistory = d.locationHistory;
+			
         } catch (e) {
         }
         if (!gl) {
@@ -107,11 +112,11 @@ amaze.display = function() {
  
 		var animTime = (time - startTime);
 		
-		drawAnimateGrid(amaze.global.maze, animTime, amaze.global.locationHistory);
+		drawAnimateGrid(data.maze, animTime, data.locationHistory);
 	}
 	
 	return {
-		initGl: initGl,
+		init: init,
 		drawGrid: drawGrid,
 		animate: animate
 	}
