@@ -7,5 +7,5 @@ aMaze is a maze generation and maze solving application created using javascript
 * http://amaze.clanteam.com/
 
 ### TODO
-* Add maze solving algorithms
-* Add different maze generation algorithms
+* Add other maze solving algorithms
+* Add other maze generation algorithms
