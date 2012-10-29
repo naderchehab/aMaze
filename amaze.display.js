@@ -3,13 +3,17 @@
 amaze.display = function() {
 
 	var gl, time, startTime;
+	var generationComplete = false;
+	var solutionComplete = false;
+	var resetAnimTime = true;
 	var data = {};
 
 	// init Web GL and grid data
-    var init = function(d) {
+    var init = function(generationResult, solutionHistory) {
         var canvas = document.getElementById("amaze-canvas");
 		
         try {
+			document.body.style.backgroundColor=amaze.constants.BgColor;
             gl = canvas.getContext("2d");
             gl.viewportWidth = canvas.width;
             gl.viewportHeight = canvas.height;
@@ -17,8 +21,9 @@ amaze.display = function() {
 			gl.strokeStyle = amaze.constants.Color;
 			gl.moveTo(0,0);		
 			
-			data.maze = d.maze;
-			data.locationHistory = d.locationHistory;
+			data.maze = generationResult.maze;
+			data.generationHistory = generationResult.generationHistory;
+			data.solutionHistory = solutionHistory;
 			
         } catch (e) {
         }
@@ -37,18 +42,63 @@ amaze.display = function() {
 	}
 	
 	// Draw grid gradually
-	var drawAnimateGrid = function(grid, animTime, locHistory) {
-		for (var i = 0; i < locHistory.length; i++) {
-			if (amaze.constants.AnimSpeed*i < animTime) {
-				drawWalls(grid[locHistory[i].y][locHistory[i].x].walls, locHistory[i].x*amaze.constants.CellSize, locHistory[i].y*amaze.constants.CellSize);
-				
-				if (grid[locHistory[i].y][locHistory[i].x].marked == true) {
-					gl.fillStyle = "yellow";
-					gl.rect(locHistory[i].x*amaze.constants.CellSize+5, locHistory[i].y*amaze.constants.CellSize+5, 5, 5);
-					gl.fill();
-				}
+	var drawAnimateGridGeneration = function(grid, animTime, generationHistory, isAnimate) {
+		for (var i = 0; i < generationHistory.length; i++) {
+			if (amaze.constants.GenerationAnimSpeed*i < animTime || !isAnimate) {
+				drawWalls(grid[generationHistory[i].y][generationHistory[i].x].walls, generationHistory[i].x*amaze.constants.CellSize, generationHistory[i].y*amaze.constants.CellSize);
 			}
 		}
+		
+		return amaze.constants.GenerationAnimSpeed*generationHistory.length < animTime;
+	}
+	
+	// Draw solution gradually
+	var drawAnimateSolution = function(animTime, solutionHistory, isAnimate) {			
+
+		for (var j = 0; j < solutionHistory.length; j++) {
+
+			if (amaze.constants.SolutionAnimSpeed*j < animTime || !isAnimate) {
+				gl.beginPath();
+				
+				if (solutionHistory[j].marked == true) {
+					// mark
+					gl.fillStyle = amaze.constants.PathColor;
+				}
+				else {
+					// unmark
+					gl.fillStyle = amaze.constants.BacktrackColor;
+				}
+				
+				var x = solutionHistory[j].x*amaze.constants.CellSize;
+				var y = solutionHistory[j].y*amaze.constants.CellSize;
+				var width = amaze.constants.CellSize;
+				var height = amaze.constants.CellSize;
+				
+				var walls = data.maze[solutionHistory[j].y][solutionHistory[j].x].walls;
+				
+				if (walls & 8) {
+					y += 2;
+				}
+				
+				if (walls & 4) {
+					height -= 3;
+				}
+				
+				if (walls & 2) {
+					x += 2;
+				}
+				
+				if (walls & 1) {
+					width -= 3;
+				}
+				
+				gl.rect(x, y, width, height);
+				gl.fill();				
+			}
+		}
+		
+		//console.log("animTime:",animTime);
+		return amaze.constants.SolutionAnimSpeed*solutionHistory.length < animTime;
 	}
 
 	// Draw a cell's walls
@@ -99,20 +149,34 @@ amaze.display = function() {
 		   return window.setTimeout(callback, 1000/60);
 		 };
 	})();
-
+	
 	// Animate
-	var animate = function() {
+	var animate = function(isAnimate) {
 
-		requestAnimFrame( animate );
-				
+		if ((!generationComplete || !solutionComplete) && isAnimate) {
+			requestAnimFrame(animate);
+		}
+
 		time = Date.now();
 		
 		if (startTime == null)
 			startTime = time;
  
-		var animTime = (time - startTime);
+		var animTime = time - startTime;
+
+		if (generationComplete == false) {
+			generationComplete = drawAnimateGridGeneration(data.maze, animTime, data.generationHistory, isAnimate);
+		}
 		
-		drawAnimateGrid(data.maze, animTime, data.locationHistory);
+		if ((generationComplete == true && solutionComplete == false) || !isAnimate) {
+
+			if (resetAnimTime && isAnimate) {
+				startTime = time;
+				animTime = (time - startTime);
+				resetAnimTime = false;
+			}
+			solutionComplete = drawAnimateSolution(animTime, data.solutionHistory, isAnimate);
+		}
 	}
 	
 	return {

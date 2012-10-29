@@ -7,7 +7,7 @@ amaze.generate = function() {
 	
 		var visitedCells = [];
 		
-		var locHistory = []; // used to animate the generation of the grid
+		var generationHistory = []; // used to remember how the grid was generated over time. used to animate the generation of the grid.
 		
 		// pick a random cell
 		var x = Math.floor((Math.random()*amaze.constants.GridWidth));
@@ -18,7 +18,7 @@ amaze.generate = function() {
 		
 		while (visitedCells.length < amaze.constants.GridWidth*amaze.constants.GridWidth) {
 					
-			locHistory.push({x: x, y: y});
+			generationHistory.push({x: x, y: y});
 					
 			// find unvisited neighbouring cells
 			
@@ -86,7 +86,7 @@ amaze.generate = function() {
 			}
 		}
 		
-		return {maze: grid, locationHistory: locHistory};
+		return {maze: grid, generationHistory: generationHistory};
 	}
 	
 	return {
