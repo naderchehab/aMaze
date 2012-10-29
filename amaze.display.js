@@ -74,22 +74,37 @@ amaze.display = function() {
 				var width = amaze.constants.CellSize;
 				var height = amaze.constants.CellSize;
 				
-				var walls = data.maze[solutionHistory[j].y][solutionHistory[j].x].walls;
-				
-				if (walls & 8) {
+				var cell = data.maze[solutionHistory[j].y][solutionHistory[j].x];
+				var walls = cell.walls;
+								
+				if (walls & 8) 
+				{
 					y += 2;
 				}
 				
-				if (walls & 4) {
-					height -= 3;
+				if (walls & 4) 
+				{
+					height -= 2;
 				}
 				
-				if (walls & 2) {
+				if (walls & 2) 
+				{
 					x += 2;
 				}
 				
-				if (walls & 1) {
-					width -= 3;
+				if (walls & 1) 
+				{
+					width -= 2;
+				}
+				
+				if (walls & 8 && walls & 4) 
+				{
+					height -= 2;
+				}
+				
+				if (walls & 2 && walls & 1) 
+				{
+					width -= 2;
 				}
 				
 				gl.rect(x, y, width, height);

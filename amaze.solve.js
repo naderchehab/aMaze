@@ -43,13 +43,7 @@ amaze.solve = function() {
 	
 		// this cell is not leading anywhere, so backtrack by unmarking it.
 		solutionHistory.push({x: startx, y: starty, marked: false});
-		/*
-		for (var i = 0; i < solutionHistory.length; i++) {
-			if (solutionHistory[i].x == startx && solutionHistory[i].y == starty) {
-				solutionHistory[i].marked = false;
-			}
-		}
-		*/
+		
 		return false;
 	}
 	
