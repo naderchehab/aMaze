@@ -1,0 +1,22 @@
+{
+  "name": "aMaze",
+  "version": "0.0.1",
+  "description": "aMaze is a maze generation and maze solving application created using HTML5 and Javascript ",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/naderchehab/aMaze.git"
+  },
+  "author": "Nader Chehab",
+  "contributors" : [],
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.13.3",
+    "body-parser": "^1.14.1",
+    "errorhandler": "^1.4.2",
+    "method-override": "^2.3.5"
+  }
+}
